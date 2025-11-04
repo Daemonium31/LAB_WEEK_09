@@ -110,7 +110,7 @@ fun HomeContent(
                 //or Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 8.dp)
                 //to add padding to each side
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(18.dp)
                     .fillMaxSize(),
                 //Alignment.CenterHorizontally is used to align the Column horizontally
                 //You can also use verticalArrangement = Arrangement.Center to align the Column vertically
