@@ -61,7 +61,7 @@ fun Home(
             Column(
                 // Add padding and make it fill available space
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(18.dp)
                     .fillMaxSize(),
                 // Center align content horizontally
                 horizontalAlignment = Alignment.CenterHorizontally
