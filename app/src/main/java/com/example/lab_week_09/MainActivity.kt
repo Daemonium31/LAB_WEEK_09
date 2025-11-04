@@ -21,6 +21,9 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.example.lab_week_09.ui.theme.*
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 
 //Main Activity
 class MainActivity : ComponentActivity() {
@@ -134,12 +137,20 @@ fun Home(
         inputField,
         { input -> inputField = inputField.copy(name = input) },
         {
+            // ✅ FIX: Prevent adding blank data to the list
             if (inputField.name.isNotBlank()) {
                 listData.add(inputField)
                 inputField = Student("")
             }
         },
-        { navigateFromHomeToResult(listData.toList().toString()) }
+        {
+            // ✅ BONUS: Use Moshi to convert listData into JSON
+            val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+            val type = Types.newParameterizedType(List::class.java, Student::class.java)
+            val adapter = moshi.adapter<List<Student>>(type)
+            val json = adapter.toJson(listData.toList())
+            navigateFromHomeToResult(json)
+        }
     )
 }
 
@@ -210,18 +221,103 @@ fun HomeContent(
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun PreviewHomeContent() {
+    LAB_WEEK_09Theme {
+        // Mock data for preview
+        val sampleList = remember {
+            mutableStateListOf(
+                Student("Tanu"),
+                Student("Tina"),
+                Student("Tono")
+            )
+        }
+        val inputField = remember { Student("") }
+
+        HomeContent(
+            listData = sampleList,
+            inputField = inputField,
+            onInputValueChange = {},
+            onButtonClick = {},
+            navigateFromHomeToResult = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewResultContent() {
+    LAB_WEEK_09Theme {
+        // Create a fake JSON to simulate data coming from Home screen
+        val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+        val type = Types.newParameterizedType(List::class.java, Student::class.java)
+        val adapter = moshi.adapter<List<Student>>(type)
+        val json = adapter.toJson(
+            listOf(
+                Student("Tanu"),
+                Student("Tina"),
+                Student("Tono")
+            )
+        )
+
+        ResultContent(listData = json)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewApp() {
+    LAB_WEEK_09Theme {
+        // Create a dummy nav controller for preview
+        val navController = rememberNavController()
+        App(navController = navController)
+    }
+}
+
 //Here, we create a composable function called ResultContent
 //ResultContent accepts a String parameter called listData from the Home composable
 //then displays the value of listData to the screen
 @Composable
 fun ResultContent(listData: String) {
-    Column(
+    // ✅ BONUS: Decode JSON back to List<Student> using Moshi
+    val moshi = remember { Moshi.Builder().add(KotlinJsonAdapterFactory()).build() }
+    val type = Types.newParameterizedType(List::class.java, Student::class.java)
+    val adapter = remember { moshi.adapter<List<Student>>(type) }
+    val studentList = remember(listData) {
+        adapter.fromJson(listData) ?: emptyList()
+    }
+
+    // ✅ Use Box to easily center the content vertically and horizontally
+    Box(
         modifier = Modifier
-            .padding(vertical = 4.dp)
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
     ) {
-        //Here, we call the OnBackgroundItemText UI Element
-        OnBackgroundItemText(text = listData)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            //Here, we call the OnBackgroundTitleText UI Element
+            OnBackgroundTitleText(text = "Submitted Students")
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ✅ Display parsed list nicely
+            if (studentList.isNotEmpty()) {
+                LazyColumn(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.heightIn(max = 300.dp)
+                ) {
+                    items(studentList) { item ->
+                        OnBackgroundItemText(text = item.name)
+                    }
+                }
+            } else {
+                OnBackgroundItemText(text = "No students submitted.")
+            }
+        }
     }
 }
